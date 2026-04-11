@@ -180,6 +180,32 @@ src/main/java/com/srg/smartexpenseapi/
 
 ---
 
+## 🐳 Docker Deployment
+
+This project is fully containerized for easy deployment.
+
+### Local Setup (Docker Compose)
+Run the entire stack (App + PostgreSQL) with a single command:
+```bash
+docker-compose up --build
+```
+
+### Build & Push to Docker Hub
+1. **Build the image**:
+   ```bash
+   docker build -t yourusername/smartexpenseapi:latest .
+   ```
+2. **Login to Docker Hub**:
+   ```bash
+   docker login
+   ```
+3. **Push the image**:
+   ```bash
+   docker push yourusername/smartexpenseapi:latest
+   ```
+
+---
+
 ## 🤝 Contributing
 Contributions are welcome! Please fork this repository and submit a pull request for any enhancements.
 
