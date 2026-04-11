@@ -1,74 +1,74 @@
-# 💰 SmartExpense Manager – Professional Finance Backend
+# 💰 SmartExpense Manager – Backend (Spring Boot)
 
-[![Build Status](https://img.shields.io/badge/Build-Success-brightgreen.svg)](#)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.13-6DB33F.svg?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Java](https://img.shields.io/badge/Java-17-ED8B00.svg?logo=java&logoColor=white)](https://www.oracle.com/java/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![JWT](https://img.shields.io/badge/Security-JWT-black.svg?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.13-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)](https://www.postgresql.org/)
+[![JWT](https://img.shields.io/badge/Security-JWT-gold.svg)](https://jwt.io/)
 
-SmartExpense Manager is a high-performance, secure financial tracking backend designed for personal wealth management. Built with **Spring Boot 3**, it handles everything from basic expense tracking to complex debt repayment optimization using **Avalanche** and **Snowball** algorithms.
-
----
-
-## 🌟 Key Highlights (Interview Ready)
-
--   **Intelligent Debt Strategy**: Implements custom logic to calculate the most efficient way to pay off multiple loans based on user preference (Interest-focused vs. Balance-focused).
--   **Historical Analytics**: Features a **Snapshot Engine** that creates immutable financial records each month for long-term progress tracking.
--   **Stateless Security**: Robust authentication using JWT, following best practices for RESTful service security.
--   **Industry Standard Schema**: A clean, refactored data model that separates logic into dedicated entities (`Income`, `DebtStrategy`, `FinancialSnapshot`).
+SmartExpense Manager is a robust financial tracking backend built with **Spring Boot 3**. It provides a centralized RESTful API to manage user authentication, expenses, income, loans, EMIs, and advanced debt repayment strategies.
 
 ---
 
-## 🚀 Core Features
+## 🌟 Interview Highlights (Pro Features)
 
-### 🔐 Security & Identity
--   **JWT Stateless Auth**: Secure signup/signin with custom `AuthTokenFilter`.
--   **RBAC**: Role-Based Access Control (`User`, `Moderator`, `Admin`).
--   **Encryption**: BCrypt hashing for all sensitive user credentials.
-
-### 💸 Wealth Management
--   **Expense & Budgeting**: Monitor spending against category-specific monthly limits.
--   **Income Streams**: Track multiple revenue sources for accurate savings calculations.
--   **Loan & EMI Tracker**: Automated debt reduction tracking; payoffs are automatically calculated upon EMI confirmation.
-
-### 📊 Financial Intelligence
--   **Strategy Preference**: Switch between **Avalanche** (minimize interest) and **Snowball** (eliminate small debts) with a single toggle.
--   **Health Metrics**: Real-time **Savings Percentage** and **Financial Health Status**.
+-   **Intelligent Strategy Engine**: Uses custom algorithms to prioritize debt repayment via **Avalanche** (math/interest-focused) or **Snowball** (behavioral/balance-focused) methods.
+-   **Historical Snapshots**: Implemented a specialized entity to store **Monthly Financial Reports**, demonstrating proficiency in time-series data and historical reporting.
+-   **Enterprise Schema**: Refactored from a simple model to a normalized **Entity Architecture**, showing adherence to professional backend standards.
+-   **Security Excellence**: Stateless JWT authentication with **BCrypt hashing**, ensuring high security and scalability.
 
 ---
 
-## 🧱 Architecture Overview
+## 🚀 Key Features
 
-### System Architecture
+-   **Secure Auth**: JWT-based authentication with Spring Security and BCrypt password encryption.
+-   **Expense Tracking**: Categorized spending logs with budget validation.
+-   **Income Management**: Track multiple earning sources for accurate savings analysis.
+-   **Loan & EMI Engine**: Comprehensive debt tracking with automated balance updates upon EMI payments.
+-   **Debt Strategy Engine**: Dynamic repayment optimization using **Avalanche** (highest interest) and **Snowball** (lowest balance) methods.
+-   **Financial Analytics**: Real-time health scores, savings percentages, and historical snapshots.
+
+---
+
+## 🛠 Tech Stack
+
+-   **Language**: Java 17
+-   **Framework**: Spring Boot 3.x
+-   **Security**: Spring Security, JJWT
+-   **Database**: PostgreSQL
+-   **ORM**: Spring Data JPA / Hibernate
+-   **Utilities**: Lombok, Jakarta Validation
+
+---
+
+## 📊 System Flow
+
+### Authentication & Authorization Flow
 ```mermaid
-graph TD
-    User([Frontend Client]) --> AuthController
-    User --> ExpenseController
-    User --> LoanController
-    User --> AnalyticsController
-    
-    subgraph "Logic Layer"
-        SecurityLayer[Spring Security / JWT]
-        AnalyticsService
-        DebtStrategyService
-    end
-    
-    subgraph "Persistence Layer (JPA Entities)"
-        UserEntity[User]
-        ExpenseEntity[Expense]
-        LoanEntity[Loan]
-        IncomeEntity[Income]
-        DebtStrategyEntity[DebtStrategy]
-        SnapshotEntity[FinancialSnapshot]
-    end
-    
-    PostgreSQL[(PostgreSQL DB)]
-    
-    UserEntity --> DebtStrategyEntity
-    SnapshotEntity --> UserEntity
+sequenceDiagram
+    participant User
+    participant AuthController
+    participant SecurityContext
+    participant JWTProvider
+    participant PostgreSQL
+
+    User->>AuthController: POST /api/auth/signup (Registration)
+    AuthController->>PostgreSQL: Save encrypted user data
+    PostgreSQL-->>AuthController: User saved
+
+    User->>AuthController: POST /api/auth/signin (Login)
+    AuthController->>JWTProvider: Authenticate & Generate Token
+    JWTProvider-->>User: Return JWT (Access Token)
+
+    User->>AuthController: GET /api/expenses (Protected)
+    AuthController->>SecurityContext: Validate Token
+    SecurityContext->>PostgreSQL: Fetch User Expenses
+    PostgreSQL-->>User: Return Data
 ```
 
-### Database Schema (ERD)
+---
+
+## 💾 Database Schema (ERD)
+
 ```mermaid
 erDiagram
     USER ||--o{ EXPENSE : logs
@@ -80,54 +80,108 @@ erDiagram
     USER }o--|| DEBT_STRATEGY : prefers
 
     EXPENSE }o--|| CATEGORY : categorized_as
+    BUDGET }o--|o CATEGORY : limits_on
+
     LOAN ||--o{ EMI_PAYMENT : consists_of
 ```
 
 ---
 
-## 🚦 API Reference
+## 🏛 Architecture Diagram
 
-### 🔑 Authentication
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/api/auth/signup` | `POST` | Create a new account |
-| `/api/auth/signin` | `POST` | Authenticate & get token |
-
-### 📈 Analytics & Strategies
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/api/analytics/summary` | `GET` | Current financial health metrics |
-| `/api/analytics/snapshot` | `POST` | Log a monthly progress record |
-| `/api/strategies/recommended` | `GET` | Repayment order based on preference |
-| `/api/strategies/preference` | `POST` | Toggle Avalanche/Snowball |
+```mermaid
+graph TD
+    User([User]) --> AuthController
+    User --> ExpenseController
+    User --> LoanController
+    User --> AnalyticsController
+    
+    subgraph "Core Components"
+        SecurityLayer[Spring Security / JWT]
+        AnalyticsService
+        DebtStrategyService
+    end
+    
+    subgraph "Entities (Refactored Package)"
+        UserEntity[User]
+        ExpenseEntity[Expense]
+        LoanEntity[Loan]
+        IncomeEntity[Income]
+        BudgetEntity[Budget]
+        DebtStrategyEntity[DebtStrategy]
+        SnapshotEntity[FinancialSnapshot]
+    end
+    
+    PostgreSQL[(PostgreSQL DB)]
+    
+    UserEntity --> DebtStrategyEntity
+    SnapshotEntity --> UserEntity
+```
 
 ---
 
-## 🛠 Tech Stack
--   **Backend**: Spring Boot 3.4.13
--   **Database**: PostgreSQL 15
--   **Security**: Spring Security + JJWT
--   **Documentation**: Mermaid.js, Markdown
--   **Tools**: Lombok, Maven, Jakarta Validation
+## 📂 Project Structure
+
+```text
+src/main/java/com/srg/smartexpenseapi/
+├── controller/        # REST Endpoints
+├── entity/            # Data Models (JPA Entities)
+├── repository/        # Data Access Layer
+├── service/           # Business Logic
+├── security/          # JWT & Security Config
+├── payload/           # DTOs (Request/Response)
+└── exception/         # Global Error Handling
+```
 
 ---
 
-## ⚙️ Quick Start
+## 🚦 API Endpoints (Quick Reference)
 
-1.  **Clone the Repo**:
+### 🔐 Authentication
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| POST | `/api/auth/signup` | Register a new user |
+| POST | `/api/auth/signin` | Login & receive JWT |
+
+### 💸 Expenses & Income
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/api/expenses` | Get all expenses |
+| POST | `/api/income` | Log new income |
+| GET | `/api/analytics/summary` | Financial health report |
+
+### 📈 Debt Management
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/api/strategies/recommended` | Optimized loan repayment list |
+| POST | `/api/strategies/preference` | Save Avalanche/Snowball choice |
+
+---
+
+## ⚙️ Setup & Installation
+
+1.  **Clone the Repository**:
     ```bash
     git clone https://github.com/sarangsvkm/smartexpenseapi.git
     ```
-2.  **Configure Database**:
-    Add your PostgreSQL credentials to `src/main/resources/application.properties`.
-3.  **Run Application**:
+
+2.  **Database Configuration**:
+    Create a PostgreSQL database named `smartexpense_db` and update `src/main/resources/application.properties` with your credentials:
+    ```properties
+    spring.datasource.url=jdbc:postgresql://localhost:5432/smartexpense_db
+    spring.datasource.username=your_username
+    spring.datasource.password=your_password
+    ```
+
+3.  **Build & Run**:
     ```bash
     ./mvnw spring-boot:run
     ```
 
 ---
 
-## 📄 Repository Meta
-- **Author**: Sarang (sarangsvkm)
-- **License**: MIT
-- **Status**: V2 (Interview Ready)
+## 🤝 Contributing
+Contributions are welcome! Please fork this repository and submit a pull request for any enhancements.
+
+## 📄 License
+This project is licensed under the MIT License.

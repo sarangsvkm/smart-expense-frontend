@@ -6,8 +6,11 @@ import org.springframework.stereotype.Component;
 import com.srg.smartexpenseapi.entity.ERole;
 import com.srg.smartexpenseapi.entity.Role;
 import com.srg.smartexpenseapi.entity.DebtStrategy;
+import com.srg.smartexpenseapi.entity.Category;
 import com.srg.smartexpenseapi.repository.RoleRepository;
 import com.srg.smartexpenseapi.repository.DebtStrategyRepository;
+import com.srg.smartexpenseapi.repository.CategoryRepository;
+import java.util.Arrays;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -17,6 +20,9 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private DebtStrategyRepository debtStrategyRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -37,6 +43,12 @@ public class DataInitializer implements CommandLineRunner {
                 .description("Focuses on paying off debts with the smallest balances first.")
                 .build());
             System.out.println("Debt strategies initialized.");
+        }
+
+        if (categoryRepository.count() == 0) {
+            Arrays.asList("Housing", "Food", "Transport", "Utilities", "Entertainment", "Health", "Shopping", "Others")
+                .forEach(name -> categoryRepository.save(new Category(null, name)));
+            System.out.println("Categories initialized.");
         }
     }
 }
