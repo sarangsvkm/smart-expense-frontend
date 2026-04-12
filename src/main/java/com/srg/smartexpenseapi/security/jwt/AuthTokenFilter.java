@@ -42,6 +42,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // --- Sliding Session: Generate a new token to reset the 30-min timer ---
+        String newToken = jwtUtils.generateJwtToken(authentication);
+        response.setHeader("New-Token", newToken);
+        // ---------------------------------------------------------------------
       }
     } catch (Exception e) {
       logger.error("Cannot set user authentication: {}", e);

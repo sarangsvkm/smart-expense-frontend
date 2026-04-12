@@ -22,6 +22,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,6 +39,7 @@ public class User {
 
   @NotBlank
   @Size(max = 120)
+  @com.fasterxml.jackson.annotation.JsonIgnore
   private String password;
 
   @ManyToOne(fetch = FetchType.LAZY)

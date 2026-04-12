@@ -1,68 +1,67 @@
-# 💰 SmartExpense Manager – Backend (Spring Boot)
+# 💰 SmartExpense Manager – Enterprise Financial Backend
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.13-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)](https://www.postgresql.org/)
-[![JWT](https://img.shields.io/badge/Security-JWT-gold.svg)](https://jwt.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
+[![JWT](https://img.shields.io/badge/Security-Sliding_JWT-gold.svg)](https://jwt.io/)
 
-SmartExpense Manager is a robust financial tracking backend built with **Spring Boot 3**. It provides a centralized RESTful API to manage user authentication, expenses, income, loans, EMIs, and advanced debt repayment strategies.
+SmartExpense Manager is a production-grade financial tracking backend built with **Spring Boot 3**. It offers advanced features like **Indian ITR (1-4) tax calculation**, **Debt Repayment Optimization**, and **Sliding Session Security**, making it a perfect project for demonstrating high-level backend engineering skills.
 
 ---
 
-## 🌟 Interview Highlights (Pro Features)
+## 🌟 Interview Highlights (Enterprise Features)
 
--   **Intelligent Strategy Engine**: Uses custom algorithms to prioritize debt repayment via **Avalanche** (math/interest-focused) or **Snowball** (behavioral/balance-focused) methods.
--   **Historical Snapshots**: Implemented a specialized entity to store **Monthly Financial Reports**, demonstrating proficiency in time-series data and historical reporting.
--   **Enterprise Schema**: Refactored from a simple model to a normalized **Entity Architecture**, showing adherence to professional backend standards.
--   **Security Excellence**: Stateless JWT authentication with **BCrypt hashing**, ensuring high security and scalability.
+-   **Indian Tax Compliance Engine**: Supports **ITR-1 to ITR-4** models with specialized logic for Section 87A rebates and **Presumptive Taxation (8%)**.
+-   **Sliding Session Security**: Implemented a **Rolling JWT refresh mechanism** that resets the inactivity timer on every request—balancing security with user experience.
+-   **Multi-Regime Tax Comparator**: Real-time comparison between the **Old vs. New Tax Regimes (FY 2025-26)** to recommend the most tax-efficient path.
+-   **Intelligent Debt Strategy**: Custom implementations of **Avalanche** (Interest-focused) and **Snowball** (Balance-focused) repayment algorithms.
+-   **Automated Data Seeding**: Robust initialization logic that ensures mission-critical database roles exist on startup—zero manual DB setup required for auth.
 
 ---
 
 ## 🚀 Key Features
 
--   **Secure Auth**: JWT-based authentication with Spring Security and BCrypt password encryption.
--   **Expense Tracking**: Categorized spending logs with budget validation.
--   **Income Management**: Track multiple earning sources for accurate savings analysis.
--   **Loan & EMI Engine**: Comprehensive debt tracking with automated balance updates upon EMI payments.
--   **Debt Strategy Engine**: Dynamic repayment optimization using **Avalanche** (highest interest) and **Snowball** (lowest balance) methods.
--   **Financial Analytics**: Real-time health scores, savings percentages, and historical snapshots.
+### 1. 🛡️ Advanced Security
+- **Sliding JWT Sessions**: Tokens are refreshed automatically in the `New-Token` response header.
+- **BCrypt Encryption**: Industry-standard hashing for all user credentials.
+- **Role-Based Access**: Granular protection (USER/ADMIN) using Spring Security.
 
----
+### 2. 📊 Indian Tax & ITR Module
+- **ITR Forms**: Automated data gathering for ITR-1 (Salary), ITR-2 (Capital Gains), ITR-3 (Professional), and ITR-4 (Presumptive).
+- **Asset Classes**: Detailed tracking for **Stocks, Mutual Funds, and Gold** with buy/sell price analysis.
+- **FY 2025-26 Ready**: Includes the ₹75,000 standard deduction and ₹12 Lakh rebate rules.
 
-## 🛠 Tech Stack
-
--   **Language**: Java 17
--   **Framework**: Spring Boot 3.x
--   **Security**: Spring Security, JJWT
--   **Database**: PostgreSQL
--   **ORM**: Spring Data JPA / Hibernate
--   **Utilities**: Lombok, Jakarta Validation
+### 3. 📉 Debt & EMI Management
+- **Automated EMI Logic**: Paying an EMI automatically reduces loan principal and updates financial snapshots.
+- **Strategy Recommendation**: Suggests the best repayment method based on the user's current debt profile.
 
 ---
 
 ## 📊 System Flow
 
-### Authentication & Authorization Flow
+### Sliding Session Authentication Flow
 ```mermaid
 sequenceDiagram
     participant User
-    participant AuthController
+    participant AuthTokenFilter
     participant SecurityContext
     participant JWTProvider
-    participant PostgreSQL
+    participant API
 
-    User->>AuthController: POST /api/auth/signup (Registration)
-    AuthController->>PostgreSQL: Save encrypted user data
-    PostgreSQL-->>AuthController: User saved
-
-    User->>AuthController: POST /api/auth/signin (Login)
-    AuthController->>JWTProvider: Authenticate & Generate Token
-    JWTProvider-->>User: Return JWT (Access Token)
-
-    User->>AuthController: GET /api/expenses (Protected)
-    AuthController->>SecurityContext: Validate Token
-    SecurityContext->>PostgreSQL: Fetch User Expenses
-    PostgreSQL-->>User: Return Data
+    User->>API: Request (Header: Authorization: Bearer <OldToken>)
+    API->>AuthTokenFilter: Intercept Request
+    AuthTokenFilter->>JWTProvider: Validate OldToken
+    JWTProvider-->>AuthTokenFilter: Token Valid
+    AuthTokenFilter->>SecurityContext: Set Authentication
+    
+    Note right of AuthTokenFilter: SLIDING SESSION LOGIC
+    AuthTokenFilter->>JWTProvider: Generate Fresh Token
+    JWTProvider-->>AuthTokenFilter: NewToken (30 min expiry)
+    
+    AuthTokenFilter->>API: Continue Filter Chain
+    API-->>User: Response (Header: New-Token: <NewToken>)
+    
+    Note over User, API: Client updates local storage with NewToken
 ```
 
 ---
@@ -81,8 +80,20 @@ erDiagram
 
     EXPENSE }o--|| CATEGORY : categorized_as
     BUDGET }o--|o CATEGORY : limits_on
-
     LOAN ||--o{ EMI_PAYMENT : consists_of
+
+    INCOME {
+        double amount
+        string category "SALARY, BUSINESS, CAPITAL_GAINS..."
+        string assetType "GOLD, STOCKS, MUTUAL_FUND..."
+        double purchasePrice
+        boolean isTaxable
+    }
+
+    EXPENSE {
+        double amount
+        boolean isTaxDeductible
+    }
 ```
 
 ---
@@ -92,122 +103,67 @@ erDiagram
 ```mermaid
 graph TD
     User([User]) --> AuthController
-    User --> ExpenseController
-    User --> LoanController
+    User --> TaxController
     User --> AnalyticsController
     
-    subgraph "Core Components"
-        SecurityLayer[Spring Security / JWT]
-        AnalyticsService
-        DebtStrategyService
+    subgraph "Core Business Services"
+        TaxCalcService[TaxCalculationService]
+        TaxRecService[TaxRecommendationService]
+        DebtService[DebtStrategyService]
+        AnalyticsService[AnalyticsService]
     end
     
-    subgraph "Entities (Refactored Package)"
-        UserEntity[User]
-        ExpenseEntity[Expense]
-        LoanEntity[Loan]
-        IncomeEntity[Income]
-        BudgetEntity[Budget]
-        DebtStrategyEntity[DebtStrategy]
-        SnapshotEntity[FinancialSnapshot]
+    subgraph "Entities"
+        IncomeE[Income]
+        ExpenseE[Expense]
+        UserE[User]
+        LoanE[Loan]
     end
+    
+    TaxCalcService --> IncomeE
+    TaxCalcService --> ExpenseE
+    TaxRecService --> IncomeE
+    AnalyticsService --> UserE
     
     PostgreSQL[(PostgreSQL DB)]
-    
-    UserEntity --> DebtStrategyEntity
-    SnapshotEntity --> UserEntity
+    IncomeE --> PostgreSQL
+    UserE --> PostgreSQL
 ```
 
 ---
 
-## 📂 Project Structure
+## 🚦 New API Endpoints (Tax Module)
 
-```text
-src/main/java/com/srg/smartexpenseapi/
-├── controller/        # REST Endpoints
-├── entity/            # Data Models (JPA Entities)
-├── repository/        # Data Access Layer
-├── service/           # Business Logic
-├── security/          # JWT & Security Config
-├── payload/           # DTOs (Request/Response)
-└── exception/         # Global Error Handling
-```
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| GET | `/api/tax/recommendation` | Suggests ITR-1, 2, 3, or 4 based on user data |
+| GET | `/api/tax/report` | Detailed comparison of Old vs New Tax Regimes |
+| POST | `/api/analytics/snapshot` | Save current financial state for historical tracking |
 
 ---
 
-## 🚦 API Endpoints (Quick Reference)
+## 🛣 Future Roadmap
 
-### 🔐 Authentication
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| POST | `/api/auth/signup` | Register a new user |
-| POST | `/api/auth/signin` | Login & receive JWT |
-
-### 💸 Expenses & Income
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/api/expenses` | Get all expenses |
-| POST | `/api/income` | Log new income |
-| GET | `/api/analytics/summary` | Financial health report |
-
-### 📈 Debt Management
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| GET | `/api/strategies/recommended` | Optimized loan repayment list |
-| POST | `/api/strategies/preference` | Save Avalanche/Snowball choice |
+- [ ] **PDF Report Generator**: Generate professional ITR summary PDFs using iText.
+- [ ] **Email Notifications**: Weekly financial health summaries and EMI reminders.
+- [ ] **Third-Party Integration**: Real-time stock/gold price syncing for accurate Capital Gains.
+- [ ] **Mutual Fund Portfolio Sync**: Integration with CAS (Consolidated Account Statement) files.
 
 ---
 
 ## ⚙️ Setup & Installation
 
-1.  **Clone the Repository**:
+1.  **Clone & Run**:
     ```bash
     git clone https://github.com/sarangsvkm/smartexpenseapi.git
-    ```
-
-2.  **Database Configuration**:
-    Create a PostgreSQL database named `smartexpense_db` and update `src/main/resources/application.properties` with your credentials:
-    ```properties
-    spring.datasource.url=jdbc:postgresql://localhost:5432/smartexpense_db
-    spring.datasource.username=your_username
-    spring.datasource.password=your_password
-    ```
-
-3.  **Build & Run**:
-    ```bash
     ./mvnw spring-boot:run
     ```
+2.  **Docker Setup**:
+    ```bash
+    docker-compose up --build
+    ```
 
 ---
-
-## 🐳 Docker Deployment
-
-This project is fully containerized for easy deployment.
-
-### Local Setup (Docker Compose)
-Run the entire stack (App + PostgreSQL) with a single command:
-```bash
-docker-compose up --build
-```
-
-### Build & Push to Docker Hub
-1. **Build the image**:
-   ```bash
-   docker build -t yourusername/smartexpenseapi:latest .
-   ```
-2. **Login to Docker Hub**:
-   ```bash
-   docker login
-   ```
-3. **Push the image**:
-   ```bash
-   docker push yourusername/smartexpenseapi:latest
-   ```
-
----
-
-## 🤝 Contributing
-Contributions are welcome! Please fork this repository and submit a pull request for any enhancements.
 
 ## 📄 License
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

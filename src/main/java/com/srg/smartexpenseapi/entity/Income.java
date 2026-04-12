@@ -13,6 +13,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Income {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +28,20 @@ public class Income {
     @Column(nullable = false)
     private LocalDate date;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private IncomeCategory category;
+
+    @Builder.Default
+    private Boolean isTaxable = true;
+
+    // For Capital Gains (ITR-2/3)
+    private Double purchasePrice;
+    private LocalDate purchaseDate;
+    private String assetType; // STOCKS, MUTUAL_FUND, GOLD, REAL_ESTATE, etc.
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 }
