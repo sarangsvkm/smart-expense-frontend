@@ -1,25 +1,47 @@
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
+# ── Monorepo Root Git Ignore ──────────────────────────────────────────────
 
 # IDEs
 .idea/
-*.iml
-*.iws
 .vscode/
+*.swp
+*.swo
 .settings/
 .classpath
 .project
 .factorypath
+bin/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# ── Backend (Java / Maven) ──────────────────────────────────────────────
+smartexpenseapi/target/
+smartexpenseapi/pom.xml.tag
+smartexpenseapi/pom.xml.releaseBackup
+smartexpenseapi/pom.xml.versionsBackup
+smartexpenseapi/pom.xml.next
+smartexpenseapi/release.properties
+smartexpenseapi/dependency-reduced-pom.xml
+smartexpenseapi/buildNumber.properties
+smartexpenseapi/.mvn/timing.properties
+smartexpenseapi/.mvn/wrapper/maven-wrapper.jar
+smartexpenseapi/mvnw
+smartexpenseapi/mvnw.cmd
+
+# ── Frontend (Node / npm) ──────────────────────────────────────────────
+**/node_modules/
+**/dist/
+**/.next/
+**/.env.local
+**/.env.*.local
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnpm-debug.log*
+
+# Workspace-specific
+smart-expense-frontend/desktop/dist/
+smart-expense-frontend/mobile/dist/
+smart-expense-frontend/web/dist/
+smart-expense-frontend/.env
