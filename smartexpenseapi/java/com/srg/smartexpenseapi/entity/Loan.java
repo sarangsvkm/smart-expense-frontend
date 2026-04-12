@@ -11,10 +11,21 @@ import java.time.LocalDate;
 @Table(name = "loans")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Loan {
+    @Builder
+    public Loan(Long id, String loanName, Double principalAmount, Double interestRate, 
+                Integer tenureMonths, LocalDate startDate, Double remainingBalance, User user) {
+        this.id = id;
+        this.loanName = loanName;
+        this.principalAmount = principalAmount;
+        this.interestRate = interestRate;
+        this.tenureMonths = tenureMonths;
+        this.startDate = startDate;
+        this.remainingBalance = remainingBalance;
+        this.user = user;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

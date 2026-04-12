@@ -8,13 +8,23 @@ import lombok.Builder;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "income")
+@Table(name = "expenses")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Income {
+public class Expense {
+    @Builder
+    public Expense(Long id, Double amount, String description, LocalDate date, 
+                   Boolean isTaxDeductible, User user, Category category) {
+        this.id = id;
+        this.amount = amount;
+        this.description = description;
+        this.date = date;
+        this.isTaxDeductible = isTaxDeductible != null ? isTaxDeductible : false;
+        this.user = user;
+        this.category = category;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,26 +32,19 @@ public class Income {
     @Column(nullable = false)
     private Double amount;
 
-    @Column(nullable = false)
-    private String source;
+    private String description;
 
     @Column(nullable = false)
     private LocalDate date;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private IncomeCategory category;
-
-    @Builder.Default
-    private Boolean isTaxable = true;
-
-    // For Capital Gains (ITR-2/3)
-    private Double purchasePrice;
-    private LocalDate purchaseDate;
-    private String assetType; // STOCKS, MUTUAL_FUND, GOLD, REAL_ESTATE, etc.
+    private Boolean isTaxDeductible = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
 }

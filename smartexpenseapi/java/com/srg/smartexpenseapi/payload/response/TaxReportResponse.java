@@ -3,6 +3,7 @@ package com.srg.smartexpenseapi.payload.response;
 import lombok.Builder;
 import lombok.Data;
 import java.util.Map;
+import java.util.List;
 
 @Data
 @Builder
@@ -13,7 +14,9 @@ public class TaxReportResponse {
     private Double totalCapitalGains;
     private Double totalOtherIncome;
     private Double totalDeductions;
+    private Double verifiedDeductions; // From uploaded documents
     private Double netTaxableIncome;
+    private Double livePortfolioValue; // Current market value of assets
     private Double estimatedTax; // This will show the recommended (lower) tax
     private Double estimatedTaxOldRegime;
     private Double estimatedTaxNewRegime;
@@ -21,4 +24,6 @@ public class TaxReportResponse {
     private String taxBracket;
     private Map<String, Double> incomeBreakdown;
     private Map<String, Double> capitalGainsBreakdown;
+    private Double cessAmount;
+    private List<String> eligibilityWarnings;
 }

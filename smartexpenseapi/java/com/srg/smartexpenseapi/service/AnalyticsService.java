@@ -41,7 +41,7 @@ public class AnalyticsService {
         double savingsPercentage = totalIncome > 0 ? (savings / totalIncome) * 100 : 0.0;
 
         Map<String, Double> expensesByCategory = expenses.stream()
-                .filter(e -> e.getCategory() != null)
+                .filter(e -> e.getCategory() != null && e.getCategory().getName() != null)
                 .collect(Collectors.groupingBy(e -> e.getCategory().getName(), 
                                              Collectors.summingDouble(Expense::getAmount)));
 

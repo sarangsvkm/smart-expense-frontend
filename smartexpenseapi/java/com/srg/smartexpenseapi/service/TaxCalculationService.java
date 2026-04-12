@@ -8,6 +8,8 @@ import com.srg.smartexpenseapi.entity.IncomeCategory;
 import com.srg.smartexpenseapi.payload.response.TaxReportResponse;
 import com.srg.smartexpenseapi.repository.IncomeRepository;
 import com.srg.smartexpenseapi.repository.ExpenseRepository;
+import com.srg.smartexpenseapi.repository.TaxInvestmentDocRepository;
+import com.srg.smartexpenseapi.entity.TaxInvestmentDoc;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,6 +22,12 @@ public class TaxCalculationService {
 
     @Autowired
     private ExpenseRepository expenseRepository;
+
+    @Autowired
+    private TaxInvestmentDocRepository docRepository;
+
+    @Autowired
+    private MarketDataService marketDataService;
 
     public TaxReportResponse calculateTaxForYear(Long userId, Integer year, String itrType) {
         List<Income> incomes = incomeRepository.findByUserId(userId).stream()
@@ -36,8 +44,21 @@ public class TaxCalculationService {
         double capitalGains = calculateCapitalGains(incomes);
         double otherIncome = incomes.stream().filter(i -> i.getCategory() == IncomeCategory.OTHER_SOURCES || i.getCategory() == IncomeCategory.HOUSE_PROPERTY).mapToDouble(Income::getAmount).sum();
 
-        double totalDeductions = deductions.stream().mapToDouble(Expense::getAmount).sum();
+        double totalExpenseDeductions = deductions.stream().mapToDouble(Expense::getAmount).sum();
         
+        // Fetch verified deductions from uploaded documents
+        List<TaxInvestmentDoc> verifiedDocs = docRepository.findByUserIdAndFiscalYear(userId, year);
+        double verifiedDeductions = verifiedDocs.stream().mapToDouble(TaxInvestmentDoc::getAmount).sum();
+
+        // Total deductions = Expenses marked deductible + Uploaded proofs
+        double totalDeductions = totalExpenseDeductions + verifiedDeductions;
+        
+        // Calculate Live Portfolio Value
+        double livePortfolioValue = incomes.stream()
+                .filter(i -> i.getCategory() == IncomeCategory.CAPITAL_GAINS && i.getAssetType() != null)
+                .mapToDouble(i -> marketDataService.estimateCurrentValue(i.getAssetType(), i.getAmount())) // Using sell amount as 'current' or 'basis' for simple demo
+                .sum();
+
         // ITR-4 Presumptive Logic (6% if digital, but we'll assume 8% standard for simplicity in this model)
         double calculatedBusinessIncome = businessIncome + (presumptiveIncome * 0.08);
 
@@ -50,8 +71,17 @@ public class TaxCalculationService {
         double oldRegimeTax = calculateOldRegimeTax(netTaxableIncome, isSalaried);
         double newRegimeTax = calculateNewRegimeTax(netTaxableIncome, isSalaried);
 
-        String recommended = (newRegimeTax <= oldRegimeTax) ? "NEW_REGIME" : "OLD_REGIME";
-        double finalTax = (newRegimeTax <= oldRegimeTax) ? newRegimeTax : oldRegimeTax;
+        List<String> warnings = new java.util.ArrayList<>();
+        if (itrType.equals("ITR-1")) {
+            if (capitalGains > 0) warnings.add("ITR-1 is not applicable if you have Capital Gains. Please use ITR-2.");
+            if (calculatedBusinessIncome > 0) warnings.add("ITR-1 is not applicable for Business/Professional income. Please use ITR-3/4.");
+            if (salaryIncome + otherIncome > 5000000) warnings.add("ITR-1 is only for total income up to ₹50 Lakhs.");
+        } else if (itrType.equals("ITR-4") && capitalGains > 0) {
+            warnings.add("ITR-4 (Sugam) does not support Capital Gains. Please use ITR-3.");
+        }
+
+        double finalTaxBeforeCess = (newRegimeTax <= oldRegimeTax) ? newRegimeTax : oldRegimeTax;
+        double cess = finalTaxBeforeCess * 0.04;
 
         Map<String, Double> cgBreakdown = incomes.stream()
                 .filter(i -> i.getCategory() == IncomeCategory.CAPITAL_GAINS && i.getAssetType() != null)
@@ -60,6 +90,8 @@ public class TaxCalculationService {
                         Collectors.summingDouble(i -> Math.max(0, i.getAmount() - (i.getPurchasePrice() != null ? i.getPurchasePrice() : 0)))
                 ));
 
+        String recommended = (newRegimeTax <= oldRegimeTax) ? "NEW_REGIME" : "OLD_REGIME";
+
         return TaxReportResponse.builder()
                 .itrType(itrType)
                 .totalSalaryIncome(salaryIncome)
@@ -67,14 +99,18 @@ public class TaxCalculationService {
                 .totalCapitalGains(capitalGains)
                 .totalOtherIncome(otherIncome)
                 .totalDeductions(totalDeductions)
+                .verifiedDeductions(verifiedDeductions)
                 .netTaxableIncome(netTaxableIncome)
-                .estimatedTax(finalTax)
-                .estimatedTaxOldRegime(oldRegimeTax)
-                .estimatedTaxNewRegime(newRegimeTax)
+                .livePortfolioValue(livePortfolioValue)
+                .estimatedTax(finalTaxBeforeCess + cess) // Total Tax including Cess
+                .estimatedTaxOldRegime(oldRegimeTax + (oldRegimeTax * 0.04))
+                .estimatedTaxNewRegime(newRegimeTax + (newRegimeTax * 0.04))
                 .recommendedRegime(recommended)
                 .taxBracket(getTaxBracketName(netTaxableIncome, recommended))
                 .incomeBreakdown(incomes.stream().collect(Collectors.groupingBy(i -> i.getCategory().name(), Collectors.summingDouble(Income::getAmount))))
                 .capitalGainsBreakdown(cgBreakdown)
+                .cessAmount(cess)
+                .eligibilityWarnings(warnings)
                 .build();
     }
 

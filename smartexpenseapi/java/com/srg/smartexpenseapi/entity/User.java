@@ -20,10 +20,18 @@ import java.util.Set;
     })
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
+    @Builder
+    public User(Long id, String username, String email, String password, DebtStrategy preferredStrategy, Set<Role> roles) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.preferredStrategy = preferredStrategy;
+        this.roles = roles != null ? roles : new HashSet<>();
+    }
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -50,7 +58,6 @@ public class User {
   @JoinTable(name = "user_roles", 
              joinColumns = @JoinColumn(name = "user_id"), 
              inverseJoinColumns = @JoinColumn(name = "role_id"))
-  @Builder.Default
   private Set<Role> roles = new HashSet<>();
 
   public User(String username, String email, String password) {

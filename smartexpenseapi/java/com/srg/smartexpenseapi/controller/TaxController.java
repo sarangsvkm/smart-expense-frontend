@@ -8,9 +8,13 @@ import org.springframework.web.bind.annotation.*;
 import com.srg.smartexpenseapi.security.services.UserDetailsImpl;
 import com.srg.smartexpenseapi.service.TaxCalculationService;
 import com.srg.smartexpenseapi.service.TaxRecommendationService;
+import com.srg.smartexpenseapi.service.TaxReportPdfService;
 import com.srg.smartexpenseapi.payload.response.TaxReportResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/tax")
@@ -22,6 +26,9 @@ public class TaxController {
 
     @Autowired
     private TaxRecommendationService recommendationService;
+
+    @Autowired
+    private TaxReportPdfService pdfService;
 
     @GetMapping("/recommendation")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
@@ -42,5 +49,20 @@ public class TaxController {
             @RequestParam(defaultValue = "ITR-1") String itrType) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return ResponseEntity.ok(taxService.calculateTaxForYear(userDetails.getId(), year, itrType));
+    }
+    @GetMapping("/report/download")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<byte[]> downloadTaxReport(
+            @RequestParam(defaultValue = "2026") Integer year,
+            @RequestParam(defaultValue = "ITR-1") String itrType) throws IOException {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        TaxReportResponse report = taxService.calculateTaxForYear(userDetails.getId(), year, itrType);
+        
+        byte[] pdfContent = pdfService.generateTaxReportPdf(report);
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=SmartExpense_Tax_Report_" + year + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfContent);
     }
 }
