@@ -3,6 +3,7 @@ package com.srg.smartexpenseapi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 import com.srg.smartexpenseapi.entity.ERole;
 import com.srg.smartexpenseapi.entity.Role;
 import com.srg.smartexpenseapi.entity.DebtStrategy;
@@ -11,7 +12,12 @@ import com.srg.smartexpenseapi.repository.RoleRepository;
 import com.srg.smartexpenseapi.repository.DebtStrategyRepository;
 import com.srg.smartexpenseapi.repository.CategoryRepository;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
+import com.srg.smartexpenseapi.entity.User;
+import com.srg.smartexpenseapi.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -23,6 +29,21 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Value("${app.admin.username}")
+    private String adminUsername;
+
+    @Value("${app.admin.email}")
+    private String adminEmail;
+
+    @Value("${app.admin.password}")
+    private String adminPassword;
 
     @Override
     public void run(String... args) throws Exception {
@@ -49,6 +70,17 @@ public class DataInitializer implements CommandLineRunner {
             Arrays.asList("Housing", "Food", "Transport", "Utilities", "Entertainment", "Health", "Shopping", "Others")
                 .forEach(name -> categoryRepository.save(new Category(null, name)));
             System.out.println("Categories initialized.");
+        }
+
+        if (!userRepository.existsByUsername(adminUsername)) {
+            User admin = new User(adminUsername, adminEmail, passwordEncoder.encode(adminPassword));
+            Set<Role> roles = new HashSet<>();
+            Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            roles.add(adminRole);
+            admin.setRoles(roles);
+            userRepository.save(admin);
+            System.out.println("Admin user initialized.");
         }
     }
 }
