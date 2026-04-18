@@ -13,7 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
+@Transactional(readOnly = true)
 public class AnalyticsService {
 
     @Autowired
@@ -64,6 +67,7 @@ public class AnalyticsService {
         return summary;
     }
 
+    @Transactional
     public com.srg.smartexpenseapi.entity.FinancialSnapshot saveMonthlySnapshot(Long userId, Integer month, Integer year) {
         Map<String, Object> summary = getUserFinancialSummary(userId);
         com.srg.smartexpenseapi.entity.User user = new com.srg.smartexpenseapi.entity.User();

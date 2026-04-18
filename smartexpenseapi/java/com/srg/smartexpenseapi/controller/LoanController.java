@@ -10,6 +10,7 @@ import com.srg.smartexpenseapi.entity.User;
 import com.srg.smartexpenseapi.repository.UserRepository;
 import com.srg.smartexpenseapi.security.services.UserDetailsImpl;
 import com.srg.smartexpenseapi.service.LoanService;
+import com.srg.smartexpenseapi.service.LoanAnalysisService;
 import java.util.List;
 
 @RestController
@@ -21,6 +22,9 @@ public class LoanController {
     private LoanService loanService;
 
     @Autowired
+    private LoanAnalysisService loanAnalysisService;
+
+    @Autowired
     private UserRepository userRepository;
 
     @GetMapping
@@ -28,6 +32,15 @@ public class LoanController {
     public List<Loan> getAllLoans() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return loanService.getLoansByUserId(userDetails.getId());
+    }
+
+    @GetMapping("/{id}/fast-payoff")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<com.srg.smartexpenseapi.payload.response.LoanPayoffProjection> getFastPayoffProjection(
+            @PathVariable Long id, 
+            @RequestParam(required = false) Double manualSurplus) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return ResponseEntity.ok(loanAnalysisService.calculateFastPayoff(userDetails.getId(), id, manualSurplus));
     }
 
     @PostMapping

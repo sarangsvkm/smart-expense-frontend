@@ -44,7 +44,7 @@ public class Expense {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     private Category category;
 }

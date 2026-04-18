@@ -8,6 +8,9 @@ import java.util.List;
 
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category"})
     List<Expense> findByUser(User user);
-    List<Expense> findByUserId(Long userId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM Expense e JOIN FETCH e.category WHERE e.user.id = :userId")
+    List<Expense> findByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

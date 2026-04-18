@@ -11,18 +11,23 @@ import java.time.LocalDate;
 @Table(name = "loans")
 @Data
 @NoArgsConstructor
-@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Loan {
     @Builder
-    public Loan(Long id, String loanName, Double principalAmount, Double interestRate, 
-                Integer tenureMonths, LocalDate startDate, Double remainingBalance, User user) {
+    public Loan(Long id, String loanName, String financeName, String purpose, Double principalAmount, 
+            Double interestRate, Integer tenureMonths, LocalDate startDate, Double remainingBalance, 
+            Double emiAmount, LoanType loanType, User user) {
         this.id = id;
         this.loanName = loanName;
+        this.financeName = financeName;
+        this.purpose = purpose;
         this.principalAmount = principalAmount;
         this.interestRate = interestRate;
         this.tenureMonths = tenureMonths;
         this.startDate = startDate;
         this.remainingBalance = remainingBalance;
+        this.emiAmount = emiAmount;
+        this.loanType = loanType != null ? loanType : LoanType.PERSONAL;
         this.user = user;
     }
 
@@ -32,6 +37,11 @@ public class Loan {
 
     @Column(nullable = false)
     private String loanName;
+
+    private String financeName;
+
+    private String purpose;
+
 
     @Column(nullable = false)
     private Double principalAmount;
@@ -46,6 +56,16 @@ public class Loan {
     private LocalDate startDate;
 
     private Double remainingBalance;
+
+    private Double emiAmount;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "loan_type", columnDefinition = "varchar(255) default 'PERSONAL'")
+    private LoanType loanType = LoanType.PERSONAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "repayment_type", columnDefinition = "varchar(255) default 'EMI'")
+    private RepaymentType repaymentType = RepaymentType.EMI;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
