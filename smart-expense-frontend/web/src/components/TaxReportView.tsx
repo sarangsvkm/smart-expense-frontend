@@ -1,10 +1,12 @@
 import React from 'react';
 import { 
   FileText, CheckCircle2, AlertCircle, Info, 
-  ArrowRight, Download, Calculator, TrendingUp 
+  ArrowRight, Download, Calculator, TrendingUp, ShieldCheck, Wallet, LayoutDashboard
 } from 'lucide-react';
 import { TaxReportResponse } from '@smart-expense/shared/src/types';
 import { cn } from '../lib/utils';
+import { downloadTaxReport } from '@smart-expense/shared/src/api/tax';
+import { DocumentCenter } from './DocumentCenter';
 
 interface TaxReportViewProps {
   report: TaxReportResponse | null;
@@ -12,6 +14,8 @@ interface TaxReportViewProps {
 }
 
 export const TaxReportView: React.FC<TaxReportViewProps> = ({ report, loading }) => {
+  const [activeTab, setActiveTab] = React.useState<'REPORT' | 'DOCUMENTS'>('REPORT');
+
   if (loading) return <div>Loading reports...</div>;
 
   if (!report) {
@@ -28,9 +32,72 @@ export const TaxReportView: React.FC<TaxReportViewProps> = ({ report, loading })
 
   const isNewRegimeBetter = report.recommendedRegime === 'NEW_REGIME';
 
+  const handleDownload = async () => {
+    try {
+      const pdfBlob = await downloadTaxReport(2026, report.itrType.split(' ')[0]);
+      const url = window.URL.createObjectURL(new Blob([pdfBlob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `SmartExpense_Tax_Report_2026.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Failed to download report', err);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="grid gap-6 md:grid-cols-2">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Tabs */}
+      <div className="flex items-center gap-1 bg-muted p-1 rounded-xl w-fit">
+        <button 
+          onClick={() => setActiveTab('REPORT')}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'REPORT' ? "bg-white dark:bg-gray-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Tax Assessment
+        </button>
+        <button 
+          onClick={() => setActiveTab('DOCUMENTS')}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
+            activeTab === 'DOCUMENTS' ? "bg-white dark:bg-gray-800 shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <ShieldCheck className="h-4 w-4" />
+          Document Vault
+        </button>
+      </div>
+
+      {activeTab === 'DOCUMENTS' ? (
+        <DocumentCenter />
+      ) : (
+        <div className="space-y-8">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Live Portfolio Card (NEW) */}
+            <div className="col-span-2 rounded-2xl bg-gradient-to-br from-indigo-600 to-primary p-6 text-white shadow-xl shadow-primary/20 overflow-hidden relative group">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                <TrendingUp className="h-32 w-32" />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 text-indigo-100 font-bold text-xs uppercase tracking-widest mb-1">
+                  <Wallet className="h-4 w-4" />
+                  Live Asset Valuation
+                </div>
+                <div className="text-4xl font-black mb-2 flex items-baseline gap-2">
+                  ₹{report.livePortfolioValue.toLocaleString()}
+                  <span className="text-sm font-bold text-indigo-200">+5.2% Est. ROI</span>
+                </div>
+                <p className="text-indigo-100 text-sm max-w-sm">
+                  Real-time market valuation of your Gold, Mutual Funds, and Stocks based on current index pricing.
+                </p>
+              </div>
+            </div>
         {/* Recommendation Card */}
         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-8 shadow-sm">
           <div className="flex items-start justify-between mb-6">
@@ -68,7 +135,10 @@ export const TaxReportView: React.FC<TaxReportViewProps> = ({ report, loading })
           <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
             {report.itrType}
           </p>
-          <button className="w-full flex items-center justify-center gap-2 rounded-xl border border-border py-3 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <button 
+            onClick={handleDownload}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-border py-3 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
             <Download className="h-4 w-4" />
             Download Readiness Checklist
           </button>
@@ -103,6 +173,16 @@ export const TaxReportView: React.FC<TaxReportViewProps> = ({ report, loading })
                 <td className="px-6 py-4 text-sm text-red-600">-₹{report.totalDeductions.toLocaleString()}</td>
                 <td className="px-6 py-4 text-sm text-gray-400">Not Applicable</td>
               </tr>
+              {report.verifiedDeductions > 0 && (
+                <tr className="bg-green-50/50 dark:bg-green-900/10">
+                  <td className="px-6 py-4 text-sm font-medium flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-green-500" />
+                    Verified Proofs (Vault)
+                  </td>
+                  <td className="px-6 py-4 text-sm text-green-600 font-bold">Included in Deductions</td>
+                  <td className="px-6 py-4 text-sm text-green-600 font-bold">Included</td>
+                </tr>
+              )}
               <tr className="bg-primary/5">
                 <td className="px-6 py-4 text-sm font-bold">Estimated Tax Payable</td>
                 <td className={cn("px-6 py-4 text-lg font-bold", !isNewRegimeBetter ? "text-primary" : "text-muted-foreground")}>
@@ -116,6 +196,8 @@ export const TaxReportView: React.FC<TaxReportViewProps> = ({ report, loading })
           </table>
         </div>
       </div>
+    </div>
+      )}
 
       {/* Advisory Note */}
       <div className="p-6 rounded-2xl bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-900/30 flex items-start gap-4">

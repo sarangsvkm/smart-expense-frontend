@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+.env*
+.DS_Store
+*.log
+.idea/
+.vscode/
+*.swp
+*.swo

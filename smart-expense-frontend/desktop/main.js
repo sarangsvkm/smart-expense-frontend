@@ -16,10 +16,10 @@ function createWindow() {
   // In development, load from Vite dev server
   const isDev = process.env.NODE_ENV === 'development';
   if (isDev) {
-    win.loadURL('http://localhost:5173');
+    win.loadURL('http://localhost:3000');
   } else {
     // In production, load the built files
-    win.loadFile(path.join(__dirname, '../smart-expense-web/dist/index.html'));
+    win.loadFile(path.join(__dirname, '../web/dist/index.html'));
   }
 }
 

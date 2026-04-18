@@ -5,9 +5,9 @@ import {
 } from 'recharts';
 import { 
   LayoutDashboard, Wallet, CreditCard, Receipt, TrendingDown, 
-  Plus, LogOut, Calculator, IndianRupee, History
+  Plus, LogOut, Calculator, IndianRupee, History, Menu, X
 } from 'lucide-react';
-import apiClient from '@smart-expense/shared/src/api/client';
+import { fetchDashboardData, signOut } from '@smart-expense/shared/src';
 import { Expense, Income, Loan, TaxReportResponse, FinancialSummary } from '@smart-expense/shared/src/types';
 import { cn } from '../lib/utils';
 
@@ -15,6 +15,10 @@ const COLORS = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe'];
 
 import { TransactionModal } from './TransactionModal';
 import { TaxReportView } from './TaxReportView';
+import { TransactionListView } from './TransactionListView';
+import { LoanManagementView } from './LoanManagementView';
+import { CarPlannerView } from './CarPlannerView';
+import { Car } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -23,25 +27,18 @@ export const Dashboard: React.FC = () => {
   const [taxReport, setTaxReport] = useState<TaxReportResponse | null>(null);
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'TAX'>('DASHBOARD');
+  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'TAX' | 'EXPENSES' | 'INCOMES' | 'LOANS' | 'HISTORY' | 'CAR_PLANNER'>('DASHBOARD');
   const [strategyType, setStrategyType] = useState<'AVALANCHE' | 'SNOWBALL'>('AVALANCHE');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [expRes, incRes, loanRes, taxRes, analyticalRes] = await Promise.all([
-        apiClient.get<Expense[]>('/expenses'),
-        apiClient.get<Income[]>('/income'),
-        apiClient.get<Loan[]>('/loans'),
-        apiClient.get<TaxReportResponse>('/tax/report'),
-        apiClient.get<FinancialSummary>('/analytics/summary')
-      ]);
-
-      setExpenses(expRes.data);
-      setIncome(incRes.data);
-      setLoans(loanRes.data);
-      setTaxReport(taxRes.data);
-      setFinancialSummary(analyticalRes.data);
+      const data = await fetchDashboardData();
+      setExpenses(data.expenses);
+      setIncome(data.income);
+      setLoans(data.loans);
+      setTaxReport(data.taxReport);
+      setFinancialSummary(data.financialSummary);
     } catch (err) {
       console.error('Failed to fetch dashboard data', err);
     } finally {
@@ -56,6 +53,7 @@ export const Dashboard: React.FC = () => {
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const totalIncome = income.reduce((sum, i) => sum + i.amount, 0);
   const totalDebt = loans.reduce((sum, l) => sum + (l.remainingBalance || 0), 0);
+  const totalEmi = loans.reduce((sum, l) => sum + (l.emiAmount || 0), 0);
 
   const chartData = [
     { name: 'Income', amount: totalIncome },
@@ -72,13 +70,22 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-white dark:bg-gray-900 hidden md:flex flex-col">
-        <div className="p-6">
+      {/* Sidebar - Desktop and Mobile */}
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-white dark:bg-gray-900 transition-transform duration-300 md:relative md:translate-x-0",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="p-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-primary flex items-center gap-2">
             <Wallet className="h-8 w-8" />
             SmartExpense
           </h1>
+          <button 
+            className="md:hidden p-2 text-gray-500"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <X className="h-6 w-6" />
+          </button>
         </div>
         <nav className="flex-1 space-y-1 px-3">
           {[
@@ -86,12 +93,16 @@ export const Dashboard: React.FC = () => {
             { id: 'EXPENSES', name: 'Expenses', icon: Receipt },
             { id: 'INCOMES', name: 'Incomes', icon: IndianRupee },
             { id: 'LOANS', name: 'Loans & EMI', icon: CreditCard },
+            { id: 'CAR_PLANNER', name: 'Car Planner', icon: Car },
             { id: 'TAX', name: 'Tax Center', icon: Calculator },
             { id: 'HISTORY', name: 'History', icon: History },
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => (item.id === 'DASHBOARD' || item.id === 'TAX') && setActiveTab(item.id as any)}
+              onClick={() => {
+                setActiveTab(item.id as any);
+                setIsSidebarOpen(false);
+              }}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 activeTab === item.id 
@@ -106,8 +117,8 @@ export const Dashboard: React.FC = () => {
         </nav>
         <div className="p-4 border-t border-border">
           <button 
-            onClick={() => {
-              localStorage.removeItem('token');
+            onClick={async () => {
+              await signOut();
               window.location.href = '/login';
             }}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10"
@@ -118,18 +129,43 @@ export const Dashboard: React.FC = () => {
         </div>
       </aside>
 
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 overflow-auto p-8">
-        <header className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">
-              {activeTab === 'DASHBOARD' ? 'Financial Overview' : 'Tax & ITR Center'}
-            </h2>
-            <p className="text-muted-foreground">
-              {activeTab === 'DASHBOARD' 
-                ? "Welcome back! Here's what's happening today." 
-                : "Analyze your tax liability and plan your ITR filing."}
-            </p>
+      <main className="flex-1 overflow-auto p-4 md:p-8">
+        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <button 
+              className="md:hidden p-2 rounded-lg border border-border bg-white dark:bg-gray-900 shadow-sm"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+                {activeTab === 'DASHBOARD' ? 'Financial Overview' : 
+                 activeTab === 'TAX' ? 'Tax & ITR Center' :
+                 activeTab === 'EXPENSES' ? 'Expense Management' :
+                 activeTab === 'INCOMES' ? 'Income Streams' :
+                 activeTab === 'LOANS' ? 'Loans & Debt Recovery' : 
+                 activeTab === 'CAR_PLANNER' ? 'Car Buy Planner' : 'History'}
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground">
+                {activeTab === 'DASHBOARD' ? "Welcome back! Here's what's happening today." :
+                 activeTab === 'TAX' ? "Analyze your tax liability and plan your ITR filing." :
+                 activeTab === 'EXPENSES' ? "Manage your daily spending and track deductions." :
+                 activeTab === 'INCOMES' ? "Track your earnings and optimize your cash flow." :
+                 activeTab === 'LOANS' ? "Monitor your debts and stay on top of EMI payments." :
+                 activeTab === 'CAR_PLANNER' ? "Evaluate affordability and plan your dream car purchase." :
+                 "Review your past financial activities."}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             {financialSummary && (
@@ -148,21 +184,8 @@ export const Dashboard: React.FC = () => {
                 Financial Health: {financialSummary.healthStatus}
               </div>
             )}
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 transition-all active:scale-95"
-            >
-              <Plus className="h-4 w-4" />
-              Add Transaction
-            </button>
           </div>
         </header>
-
-        <TransactionModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          onSuccess={fetchData} 
-        />
 
         {activeTab === 'DASHBOARD' ? (
           <>
@@ -195,8 +218,8 @@ export const Dashboard: React.FC = () => {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="rounded-xl border border-border bg-white dark:bg-gray-900 p-6 shadow-sm">
                 <h3 className="text-lg font-semibold mb-6">Income vs Expenses</h3>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[300px] w-full relative">
+                  <ResponsiveContainer width="99%" height={300}>
                     <BarChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="name" />
@@ -270,7 +293,7 @@ export const Dashboard: React.FC = () => {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {[...loans]
                     .sort((a, b) => strategyType === 'AVALANCHE' 
-                      ? (b.interestRate - a.interestRate) 
+                      ? ((b.interestRate || 0) - (a.interestRate || 0)) 
                       : ((a.remainingBalance || a.principalAmount) - (b.remainingBalance || b.principalAmount))
                     )
                     .map((loan, idx) => (
@@ -284,7 +307,7 @@ export const Dashboard: React.FC = () => {
                         <div className="space-y-1">
                           <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Rate</span>
-                            <span className="font-medium text-red-600">{loan.interestRate}%</span>
+                            <span className="font-medium text-red-600">{loan.interestRate ?? 0}%</span>
                           </div>
                           <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Balance</span>
@@ -301,8 +324,27 @@ export const Dashboard: React.FC = () => {
               )}
             </div>
           </>
-        ) : (
+        ) : activeTab === 'TAX' ? (
           <TaxReportView report={taxReport} loading={loading} />
+        ) : activeTab === 'EXPENSES' ? (
+          <TransactionListView type="EXPENSES" data={expenses} onRefresh={fetchData} />
+        ) : activeTab === 'INCOMES' ? (
+          <TransactionListView type="INCOMES" data={income} onRefresh={fetchData} />
+        ) : activeTab === 'LOANS' ? (
+          <LoanManagementView loans={loans} onRefresh={fetchData} />
+        ) : activeTab === 'CAR_PLANNER' ? (
+          <CarPlannerView 
+            monthlyIncome={totalIncome} 
+            monthlyExpenses={totalExpenses} 
+            existingDebtEmi={totalEmi} 
+          />
+        ) : (
+          <div className="flex h-96 items-center justify-center rounded-2xl border-2 border-dashed border-border bg-gray-50/50">
+             <div className="text-center">
+                <p className="text-lg font-semibold text-muted-foreground">Module coming soon...</p>
+                <p className="text-sm text-muted-foreground">This section is currently being wired up to the backend.</p>
+             </div>
+          </div>
         )}
       </main>
     </div>

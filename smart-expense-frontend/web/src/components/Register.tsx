@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '@smart-expense/shared/src/api/client';
-import { SignupRequest, MessageResponse } from '@smart-expense/shared/src/types';
+import { signUp } from '@smart-expense/shared/src/api/auth';
 import { cn } from '../lib/utils';
 
 export const Register: React.FC = () => {
@@ -20,11 +19,11 @@ export const Register: React.FC = () => {
     setSuccess('');
 
     try {
-      await apiClient.post<MessageResponse>('/auth/signup', {
+      await signUp({
         username,
         email,
         password,
-      } as SignupRequest);
+      });
 
       setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);

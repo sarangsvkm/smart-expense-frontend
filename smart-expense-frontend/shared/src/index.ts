@@ -1,36 +1,23 @@
-/**
- * @file shared/src/index.ts
- * Barrel export for the @smart-expense/shared package.
- *
- * This file is compiled by tsc to dist/index.js and is the entry point
- * declared in shared/package.json → "main" and "types".
- *
- * Every consumer (web, mobile, desktop) imports from '@smart-expense/shared',
- * which resolves to dist/index.js after `npm run build:shared`.
- *
- * During local development (before build), Vite/TypeScript will resolve
- * paths directly via tsconfig path aliases pointing to src/.
- */
-
-// ── API Client ─────────────────────────────────────────────────────────────
 export { default as apiClient } from './api/client';
+export * from './api/auth';
+export * from './api/dashboard';
+export * from './api/transactions';
+export * from './api/loans';
+export * from './api/tax';
+export * from './api/session';
 
-// ── TypeScript Interfaces / DTOs ────────────────────────────────────────────
 export type {
-  // Auth
   User,
   JwtResponse,
   LoginRequest,
   SignupRequest,
   MessageResponse,
-
-  // Core Domain
   Category,
   Expense,
   Income,
   IncomeCategory,
   Loan,
-
-  // Tax & ITR
   TaxReportResponse,
+  TaxInvestmentDoc,
+  FinancialSummary,
 } from './types/index';

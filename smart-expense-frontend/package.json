@@ -13,6 +13,9 @@
     "dev:shared": "npm run watch -w @smart-expense/shared",
     "dev:all": "npm run dev:shared & npm run dev:web",
     "build:shared": "npm run build -w @smart-expense/shared",
-    "build:web": "npm run build:shared && npm run build -w @smart-expense/web"
+    "build:web": "npm run build:shared && npm run build -w @smart-expense/web",
+    "dev:desktop": "npm run dev:web & npm run dev -w @smart-expense/desktop",
+    "build:desktop": "npm run build:web && npm run build -w @smart-expense/desktop"
   }
 }
+

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '@smart-expense/shared/src/api/client';
-import { JwtResponse, LoginRequest } from '@smart-expense/shared/src/types';
+import { signIn } from '@smart-expense/shared/src/api/auth';
 import { cn } from '../lib/utils';
 
 export const Login: React.FC = () => {
@@ -17,13 +16,10 @@ export const Login: React.FC = () => {
     setError('');
 
     try {
-      const response = await apiClient.post<JwtResponse>('/auth/signin', {
+      await signIn({
         username,
         password,
-      } as LoginRequest);
-
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      });
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

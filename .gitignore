@@ -45,3 +45,4 @@ smart-expense-frontend/desktop/dist/
 smart-expense-frontend/mobile/dist/
 smart-expense-frontend/web/dist/
 smart-expense-frontend/.env
+**/.env

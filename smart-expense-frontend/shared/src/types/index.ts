@@ -44,7 +44,16 @@ export interface Expense {
   category?: Category;
 }
 
-export type IncomeCategory = 'SALARY' | 'BUSINESS' | 'CAPITAL_GAINS' | 'RENTAL' | 'DIVIDENDS' | 'INTEREST' | 'OTHER';
+export type IncomeCategory = 
+  | 'SALARY' 
+  | 'BUSINESS_PROFESSION' 
+  | 'PRESUMPTIVE_BUSINESS' 
+  | 'CAPITAL_GAINS' 
+  | 'HOUSE_PROPERTY' 
+  | 'OTHER_SOURCES' 
+  | 'RENTAL' 
+  | 'DIVIDENDS' 
+  | 'INTEREST';
 
 export interface Income {
   id?: number;
@@ -58,14 +67,58 @@ export interface Income {
   assetType?: string;
 }
 
+export enum LoanType {
+  PERSONAL = 'PERSONAL',
+  GOLD = 'GOLD',
+  HOME = 'HOME',
+  CAR = 'CAR',
+  EDUCATION = 'EDUCATION',
+  BUSINESS = 'BUSINESS',
+  OTHER = 'OTHER'
+}
+
+export enum RepaymentType {
+  EMI = 'EMI',
+  MONTHLY_INTEREST = 'MONTHLY_INTEREST',
+  BULLET = 'BULLET'
+}
+
 export interface Loan {
   id?: number;
   loanName: string;
+  financeName?: string;
+  purpose?: string;
   principalAmount: number;
-  interestRate: number;
-  tenureMonths: number;
+
+  interestRate?: number;
+  tenureMonths?: number;
   startDate: string;
   remainingBalance?: number;
+  emiAmount?: number;
+  loanType: LoanType;
+  repaymentType?: RepaymentType;
+}
+
+export interface MonthlyProjection {
+  month: number;
+  payment: number;
+  interest: number;
+  principal: number;
+  remainingBalance: number;
+}
+
+export interface LoanPayoffProjection {
+  loanId: number;
+  loanName: string;
+  currentBalance: number;
+  monthlySurplus: number;
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  totalInterestSaved: number;
+  originalTenureMonths: number;
+  fastPayoffTenureMonths: number;
+  monthsSaved: number;
+  projectionSchedule: MonthlyProjection[];
 }
 
 export interface TaxReportResponse {
@@ -75,7 +128,9 @@ export interface TaxReportResponse {
   totalCapitalGains: number;
   totalOtherIncome: number;
   totalDeductions: number;
+  verifiedDeductions: number;
   netTaxableIncome: number;
+  livePortfolioValue: number;
   estimatedTax: number;
   estimatedTaxOldRegime: number;
   estimatedTaxNewRegime: number;
@@ -83,6 +138,18 @@ export interface TaxReportResponse {
   taxBracket: string;
   incomeBreakdown: Record<string, number>;
   capitalGainsBreakdown: Record<string, number>;
+  cessAmount: number;
+  eligibilityWarnings: string[];
+}
+
+export interface TaxInvestmentDoc {
+  id: number;
+  fileName: string;
+  contentType: string;
+  category: string;
+  amount: number;
+  fiscalYear: number;
+  uploadDate: string;
 }
 
 export interface FinancialSummary {
