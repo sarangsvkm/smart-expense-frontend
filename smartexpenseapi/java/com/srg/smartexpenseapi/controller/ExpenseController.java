@@ -7,6 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.srg.smartexpenseapi.entity.Expense;
 import com.srg.smartexpenseapi.entity.User;
+import com.srg.smartexpenseapi.payload.request.ExpenseRequest;
 import com.srg.smartexpenseapi.repository.UserRepository;
 import com.srg.smartexpenseapi.security.services.UserDetailsImpl;
 import com.srg.smartexpenseapi.service.ExpenseService;
@@ -32,11 +33,10 @@ public class ExpenseController {
 
     @PostMapping
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-    public ResponseEntity<Expense> addExpense(@RequestBody Expense expense) {
+    public ResponseEntity<Expense> addExpense(@RequestBody ExpenseRequest request) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User user = userRepository.findById(userDetails.getId()).orElseThrow();
-        expense.setUser(user);
-        return ResponseEntity.ok(expenseService.saveExpense(expense));
+        return ResponseEntity.ok(expenseService.saveExpense(request, user));
     }
 
     @DeleteMapping("/{id}")

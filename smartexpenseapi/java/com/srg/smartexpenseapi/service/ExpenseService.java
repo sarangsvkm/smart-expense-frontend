@@ -2,15 +2,15 @@ package com.srg.smartexpenseapi.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.srg.smartexpenseapi.entity.Expense;
 import com.srg.smartexpenseapi.entity.User;
+import com.srg.smartexpenseapi.payload.request.ExpenseRequest;
 import com.srg.smartexpenseapi.payload.response.DiscoveryResponse;
-import com.srg.smartexpenseapi.repository.ExpenseRepository;
-import com.srg.smartexpenseapi.repository.CategoryRepository;
 import com.srg.smartexpenseapi.entity.Category;
+import com.srg.smartexpenseapi.repository.CategoryRepository;
+import com.srg.smartexpenseapi.repository.ExpenseRepository;
 import java.util.List;
-
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
@@ -33,25 +33,39 @@ public class ExpenseService {
     @Autowired
     private SmartDiscoveryService discoveryService;
 
+    public Expense saveExpense(ExpenseRequest request, User user) {
+        Expense expense = new Expense();
+        expense.setAmount(request.getAmount());
+        expense.setDescription(request.getDescription());
+        expense.setDate(request.getDate());
+        expense.setIsTaxDeductible(request.getIsTaxDeductible() != null ? request.getIsTaxDeductible() : false);
+        expense.setUser(user);
+        expense.setCategory(resolveIncomingCategory(request));
+        return saveExpense(expense);
+    }
+
     public Expense saveExpense(Expense expense) {
-        // Auto-Discovery: If category is missing or default, try to discover from description
-        if (expense.getCategory() == null || "MISCELLANEOUS".equals(expense.getCategory().getName())) {
+        String requestedCategoryName = normalizeCategoryName(expense.getCategory() != null ? expense.getCategory().getName() : null);
+
+        if (requestedCategoryName == null || "MISCELLANEOUS".equals(requestedCategoryName)) {
             DiscoveryResponse discovery = discoveryService.discover(expense.getDescription());
-            
-            // Set discovered category
-            Category category = categoryRepository.findByName(discovery.getCategory())
-                .orElseGet(() -> categoryRepository.save(new Category(discovery.getCategory())));
+
+            String discoveredCategoryName = normalizeCategoryName(discovery.getCategory());
+            Category category = getOrCreateCategory(discoveredCategoryName != null ? discoveredCategoryName : "MISCELLANEOUS");
             expense.setCategory(category);
-            
-            // Set discovered tax status if not already manually set
+
             if (expense.getIsTaxDeductible() == null || !expense.getIsTaxDeductible()) {
-                expense.setIsTaxDeductible(discovery.getIsTaxDeductible());
+                expense.setIsTaxDeductible(Boolean.TRUE.equals(discovery.getIsTaxDeductible()));
             }
-        } else if (expense.getCategory().getName() != null) {
-            Category category = categoryRepository.findByName(expense.getCategory().getName())
-                .orElseGet(() -> categoryRepository.save(new Category(expense.getCategory().getName())));
+        } else {
+            Category category = getOrCreateCategory(requestedCategoryName);
             expense.setCategory(category);
         }
+
+        if (expense.getIsTaxDeductible() == null) {
+            expense.setIsTaxDeductible(false);
+        }
+
         return expenseRepository.save(expense);
     }
 
@@ -61,5 +75,43 @@ public class ExpenseService {
 
     public Expense getExpenseById(Long id) {
         return expenseRepository.findById(id).orElse(null);
+    }
+
+    private Category resolveIncomingCategory(ExpenseRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        if (request.getCategory() != null) {
+            Category incomingCategory = request.getCategory();
+            String categoryName = normalizeCategoryName(incomingCategory.getName());
+            if (categoryName != null) {
+                incomingCategory.setName(categoryName);
+                return incomingCategory;
+            }
+
+            if (incomingCategory.getId() != null) {
+                return categoryRepository.findById(incomingCategory.getId()).orElse(null);
+            }
+        }
+
+        String categoryName = normalizeCategoryName(request.getCategoryName());
+        return categoryName != null ? new Category(categoryName) : null;
+    }
+
+    private Category getOrCreateCategory(String categoryName) {
+        String normalizedName = normalizeCategoryName(categoryName);
+        String safeName = normalizedName != null ? normalizedName : "MISCELLANEOUS";
+        return categoryRepository.findByNameIgnoreCase(safeName)
+            .orElseGet(() -> categoryRepository.save(new Category(safeName)));
+    }
+
+    private String normalizeCategoryName(String categoryName) {
+        if (categoryName == null) {
+            return null;
+        }
+
+        String normalized = categoryName.trim();
+        return normalized.isEmpty() ? null : normalized.toUpperCase();
     }
 }

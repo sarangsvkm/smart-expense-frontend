@@ -57,11 +57,16 @@ public class SmartDiscoveryService {
     }
 
     public DiscoveryResponse discover(String description) {
-        if (description == null || description.isEmpty()) {
-            return DiscoveryResponse.builder().confidence("LOW").build();
+        if (description == null || description.trim().isEmpty()) {
+            return DiscoveryResponse.builder()
+                    .category("MISCELLANEOUS")
+                    .isTaxDeductible(false)
+                    .confidence("LOW")
+                    .message("No matching category found.")
+                    .build();
         }
 
-        String input = description.toLowerCase();
+        String input = description.trim().toLowerCase();
         String discoveredCategory = "MISCELLANEOUS";
         boolean taxPossible = false;
         String confidence = "LOW";
@@ -94,7 +99,7 @@ public class SmartDiscoveryService {
                 .category(discoveredCategory)
                 .isTaxDeductible(taxPossible)
                 .confidence(confidence)
-                .message("Discovered via Smart AI ✨")
+                .message("Discovered via Smart AI")
                 .build();
     }
 }
